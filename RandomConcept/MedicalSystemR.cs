@@ -22,22 +22,23 @@ namespace RandomConcept
         {
             Instance = this;
             Rocket.Core.Logging.Logger.Log("Random's Mod loaded");
-            PlayerLife.OnPreDeath += OnPreDeath;
+            //PlayerLife.OnPreDeath += OnPreDeath;
         }
         protected override void Unload()
         {
             Rocket.Core.Logging.Logger.Log("Random's Med unloaded");
-            PlayerLife.OnPreDeath -= OnPreDeath;
+            //PlayerLife.OnPreDeath -= OnPreDeath;
         }
-        public void OnPreDeath(PlayerLife vari)
-        {
-            UnturnedChat.Say("waiting 10 Seconds");
-            wait inst = new wait();
-            inst.Start();
+        //public void OnPreDeath(PlayerLife vari)
+        //{
+        //    UnturnedChat.Say("waiting 10 Seconds");
+        //    wait inst = new wait();
+        //    inst.Start();
 
-        }
+        //}
     }
 
+    [HarmonyPatch(typeof(PlayerLife), nameof(PlayerLife.doDamage))]
 
     public class wait : MonoBehaviour
     {
