@@ -38,37 +38,35 @@ namespace RandomConcept
         //}
     }
 
-    [HarmonyPatch(typeof(PlayerLife), nameof(PlayerLife.askDamage))]
+    [HarmonyPatch(typeof(PlayerLife), "doDamage")]
     class Patch
+    {
+        static void Prefix(PlayerLife __instance, ref byte amount, Vector3 newRagdoll, EDeathCause newCause, ELimb newLimb, CSteamID newKiller, out EPlayerKill kill, bool trackKill = false, ERagdollEffect newRagdollEffect = ERagdollEffect.NONE, bool canCauseBleeding = true)
+        {
+            UnturnedChat.Say("before prefix");
+            kill = EPlayerKill.NONE;
+            var hp = __instance.health;
+            if (amount > hp)
+            {
+                var inthp = Convert.ToDouble(hp);
+                var intamount = Convert.ToDouble(amount);
+                intamount = inthp - 1;
+                amount = Convert.ToByte(intamount);
+            }
+            UnturnedChat.Say("after prefix");
+
+        }
+    }
+    [HarmonyPatch(typeof(PlayerLife), "askDamage")]
+    class Patch1
     {
         static void Prefix(byte amount, Vector3 newRagdoll, EDeathCause newCause, ELimb newLimb, CSteamID newKiller, out EPlayerKill kill, bool trackKill = false, ERagdollEffect newRagdollEffect = ERagdollEffect.NONE, bool canCauseBleeding = true, bool bypassSafezone = false)
         {
             kill = EPlayerKill.NONE;
-            if (base.player.movement.isSafe && base.player.movement.isSafeInfo.noWeapons && !bypassSafezone)
-            {
-                return;
-            }
-            if (this.lastRespawn > 0f && Time.realtimeSinceStartup - this.lastRespawn < 0.5f && !bypassSafezone)
-            {
-                return;
-            }
-            this.doDamage(amount, newRagdoll, newCause, newLimb, newKiller, out kill, trackKill, newRagdollEffect, canCauseBleeding);
+            UnturnedChat.Say("Damage Asked");
         }
     }
-    public class wait : MonoBehaviour
-    {
-        public void Start()
-        {
-            StartCoroutine(Wait10sec());
-        }
 
-        IEnumerator Wait10sec()
-        {
-            //yield on a new YieldInstruction that waits for 5 seconds.
-            yield return new WaitForSeconds(10);
-
-        }
-    }
 }
 
 
