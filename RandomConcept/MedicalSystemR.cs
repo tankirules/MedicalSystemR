@@ -21,51 +21,57 @@ namespace RandomConcept
         protected override void Load()
         {
             Instance = this;
+            var harmony = new Harmony("com.random.medicalsystemr");
+            harmony.PatchAll();
             Rocket.Core.Logging.Logger.Log("Random's Mod loaded");
-            //PlayerLife.OnPreDeath += OnPreDeath;
         }
         protected override void Unload()
         {
             Rocket.Core.Logging.Logger.Log("Random's Med unloaded");
-            //PlayerLife.OnPreDeath -= OnPreDeath;
         }
-        //public void OnPreDeath(PlayerLife vari)
-        //{
-        //    UnturnedChat.Say("waiting 10 Seconds");
-        //    wait inst = new wait();
-        //    inst.Start();
 
-        //}
     }
-
-    [HarmonyPatch(typeof(PlayerLife), "doDamage")]
+    [HarmonyPatch(typeof(DamageTool), "damagePlayer")]
     class Patch
     {
-        static void Prefix(PlayerLife __instance, ref byte amount, Vector3 newRagdoll, EDeathCause newCause, ELimb newLimb, CSteamID newKiller, out EPlayerKill kill, bool trackKill = false, ERagdollEffect newRagdollEffect = ERagdollEffect.NONE, bool canCauseBleeding = true)
+        static void Prefix(ref DamagePlayerParameters parameters, out EPlayerKill kill)
         {
             UnturnedChat.Say("before prefix");
             kill = EPlayerKill.NONE;
-            var hp = __instance.health;
-            if (amount > hp)
+            var player = parameters.player;
+            var hp = player.life.health;
+            var hpint = Convert.ToSingle(hp);
+            UnturnedChat.Say("hp is: " + hpint);
+            UnturnedChat.Say("damage is: " + parameters.damage);
+            if (parameters.damage > hpint)
             {
-                var inthp = Convert.ToDouble(hp);
-                var intamount = Convert.ToDouble(amount);
-                intamount = inthp - 1;
-                amount = Convert.ToByte(intamount);
+                parameters.damage = hpint - 1;
+                UnturnedChat.Say("reduced damage is: " + parameters.damage);
             }
             UnturnedChat.Say("after prefix");
 
         }
     }
-    [HarmonyPatch(typeof(PlayerLife), "askDamage")]
-    class Patch1
-    {
-        static void Prefix(byte amount, Vector3 newRagdoll, EDeathCause newCause, ELimb newLimb, CSteamID newKiller, out EPlayerKill kill, bool trackKill = false, ERagdollEffect newRagdollEffect = ERagdollEffect.NONE, bool canCauseBleeding = true, bool bypassSafezone = false)
-        {
-            kill = EPlayerKill.NONE;
-            UnturnedChat.Say("Damage Asked");
-        }
-    }
+
+    //[HarmonyPatch(typeof(DamageTool), "damage")]
+    //class Patch
+    //{
+    //    static void Prefix(Player player, EDeathCause cause, ELimb limb, CSteamID killer, Vector3 direction, ref float damage, float times, out EPlayerKill kill, bool applyGlobalArmorMultiplier = true, bool trackKill = false, ERagdollEffect ragdollEffect = ERagdollEffect.NONE)
+    //    {                 
+    //        UnturnedChat.Say("before prefix");
+    //        kill = EPlayerKill.NONE;
+    //        var hp = player.life.health;
+    //        var hpint = Convert.ToSingle(hp);
+    //        UnturnedChat.Say("hp is: " + hpint);
+    //        UnturnedChat.Say("damage is: " + damage);
+    //        if (damage > hpint)
+    //        {
+    //            damage = hpint - 1;
+    //        }
+    //        UnturnedChat.Say("after prefix");
+
+    //    }
+    //}
 
 }
 
