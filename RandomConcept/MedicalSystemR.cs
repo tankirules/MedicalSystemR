@@ -38,8 +38,23 @@ namespace RandomConcept
         //}
     }
 
-    [HarmonyPatch(typeof(PlayerLife), nameof(PlayerLife.doDamage))]
-
+    [HarmonyPatch(typeof(PlayerLife), nameof(PlayerLife.askDamage))]
+    class Patch
+    {
+        static void Prefix(byte amount, Vector3 newRagdoll, EDeathCause newCause, ELimb newLimb, CSteamID newKiller, out EPlayerKill kill, bool trackKill = false, ERagdollEffect newRagdollEffect = ERagdollEffect.NONE, bool canCauseBleeding = true, bool bypassSafezone = false)
+        {
+            kill = EPlayerKill.NONE;
+            if (base.player.movement.isSafe && base.player.movement.isSafeInfo.noWeapons && !bypassSafezone)
+            {
+                return;
+            }
+            if (this.lastRespawn > 0f && Time.realtimeSinceStartup - this.lastRespawn < 0.5f && !bypassSafezone)
+            {
+                return;
+            }
+            this.doDamage(amount, newRagdoll, newCause, newLimb, newKiller, out kill, trackKill, newRagdollEffect, canCauseBleeding);
+        }
+    }
     public class wait : MonoBehaviour
     {
         public void Start()
