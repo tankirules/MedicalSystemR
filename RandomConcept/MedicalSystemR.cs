@@ -68,8 +68,74 @@ namespace Random
             tokill.Remove(p);
 
         }
+        //CODE FOR A DELAY KILL FROM EXPLOSION
+        public void delaykill(Player player, Vector3 newRagdoll, EDeathCause newCause, ELimb newLimb, CSteamID newKiller, bool trackKill = false, ERagdollEffect newRagdollEffect = ERagdollEffect.NONE, bool canCauseBleeding = true)
+        {
+            StartCoroutine(Delayedkill(player, newRagdoll, newCause, newLimb, newKiller, false, ERagdollEffect.NONE, true));
+
+        }
+        public IEnumerator Delayedkill(Player player, Vector3 newRagdoll, EDeathCause newCause, ELimb newLimb, CSteamID newKiller, bool trackKill = false, ERagdollEffect newRagdollEffect = ERagdollEffect.NONE, bool canCauseBleeding = true)
+        {
+            UnturnedChat.Say("bam!");
+            yield return new WaitForSeconds(MedicalSystemR.Instance.Configuration.Instance.explosionairtime);
+            MedicalSystemR.Instance.tokill.Add(player);
+            DamagePlayerParameters para = new DamagePlayerParameters(player);
+            para.cause = newCause;
+            para.limb = newLimb;
+            para.killer = newKiller;
+            para.damage = 100f;
+            DamageTool.damagePlayer(para, out EPlayerKill kill);
+            player.movement.sendPluginSpeedMultiplier(1f);
 
 
+
+
+        }
+        //CODE FOR DOWNING PLAYERS AND HNALDING IT HERE
+        public void downplayer(Player player, Vector3 newRagdoll, EDeathCause newCause, ELimb newLimb, CSteamID newKiller, bool trackKill = false, ERagdollEffect newRagdollEffect = ERagdollEffect.NONE, bool canCauseBleeding = true)
+            {
+            //add to downed list
+            Random.MedicalSystemR.Instance.downedplayers.Add(player);
+            //make them unable to move
+            player.movement.sendPluginSpeedMultiplier(0);
+            //make them prone
+            var pronestance = EPlayerStance.PRONE;
+            player.stance.checkStance(pronestance, true);
+
+
+            //var tempgo = new GameObject();
+            //down d = tempgo.AddComponent<down>();
+            //d.startcor(player, newRagdoll, newCause, newLimb, newKiller, false, ERagdollEffect.NONE, true);
+            startcor(player, newRagdoll, newCause, newLimb, newKiller, false, ERagdollEffect.NONE, true);
+        }
+        public void startcor(Player player, Vector3 newRagdoll, EDeathCause newCause, ELimb newLimb, CSteamID newKiller, bool trackKill = false, ERagdollEffect newRagdollEffect = ERagdollEffect.NONE, bool canCauseBleeding = true)
+        {
+            StartCoroutine(Downtimer(player, newRagdoll, newCause, newLimb, newKiller, false, ERagdollEffect.NONE, true));
+        }
+        
+        //THIS HANDLES A PLAYER BEING DOWNWED
+        public IEnumerator Downtimer(Player player, Vector3 newRagdoll, EDeathCause newCause, ELimb newLimb, CSteamID newKiller, bool trackKill = false, ERagdollEffect newRagdollEffect = ERagdollEffect.NONE, bool canCauseBleeding = true)
+        {
+            //wait the downed amount of time
+            UnturnedChat.Say("Downed for " + MedicalSystemR.Instance.Configuration.Instance.downtime + " seconds");
+            //yield return new WaitForSeconds(MedicalSystemR.Instance.Configuration.Instance.downtime);
+            yield return new WaitForSeconds(MedicalSystemR.Instance.Configuration.Instance.downtime);
+            //if player still downed
+            UnturnedChat.Say("prepare to die");
+            if (MedicalSystemR.Instance.downedplayers.Contains(player))
+            {
+                MedicalSystemR.Instance.downedplayers.Remove(player);
+                MedicalSystemR.Instance.tokill.Add(player);
+                DamagePlayerParameters para = new DamagePlayerParameters(player);
+                para.cause = newCause;
+                para.limb = newLimb;
+                para.killer = newKiller;
+                para.damage = 100f;
+                DamageTool.damagePlayer(para, out EPlayerKill kill);
+                player.movement.sendPluginSpeedMultiplier(1f);
+            }
+            
+        }
 
 
     }
@@ -100,22 +166,31 @@ namespace Random
         
     }
 
-    //check for explosion deaths
-    //if so add them to special list
-    [HarmonyPatch(typeof(DamageTool), "damagePlayer")]
+
+    /*[HarmonyPatch(typeof(DamageTool), "damagePlayer")]
     class patch3
     {
         static void Prefix(DamagePlayerParameters parameters, out EPlayerKill kill)
         {
-            kill = EPlayerKill.NONE;
-            var cause = parameters.cause;
-            if (cause == EDeathCause.CHARGE || cause == EDeathCause.GRENADE || cause == EDeathCause.LANDMINE || cause == EDeathCause.MISSILE || cause == EDeathCause.SPLASH)
-            {
-                MedicalSystemR.Instance.explodekill.Add(parameters.player);
-            }
+            //kill = EPlayerKill.NONE;
+            //var cause = parameters.cause;
+            
+
+            //if (cause == EDeathCause.CHARGE || cause == EDeathCause.GRENADE || cause == EDeathCause.LANDMINE || cause == EDeathCause.MISSILE || cause == EDeathCause.SPLASH)
+            //{
+            //    var hp = parameters.player.life.health;
+            //    var dmg = parameters.damage;
+            //    var hpf = Convert.ToSingle(hp);
+            //    if (hpf < dmg)
+            //    {
+            //        MedicalSystemR.Instance.explodekill.Add(parameters.player);
+            //    }
+                
+            //}
 
         }
-    }
+    }*/
+
     //patch damage
     [HarmonyPatch(typeof(PlayerLife), "doDamage")]
     class patch2
@@ -136,12 +211,9 @@ namespace Random
                 //skip prefix and skip original method
                 return false;
             }
-            //delay kill exploded player
-            if (MedicalSystemR.Instance.explodekill.Contains(player) == true)
-            {
-                //delay kill with coroutine timer TODO
-            }
             //kill a downed player
+            //THIS must be before explodekill
+            //to kill exlpoded players already
             if ((MedicalSystemR.Instance.tokill.Contains(player) == true))
             {
                 UnturnedChat.Say("Executing player");
@@ -153,6 +225,9 @@ namespace Random
 
 
 
+
+
+
             //this downs a player
             //TODO: ADD TIMER
             var hp = player.life.health;
@@ -160,10 +235,19 @@ namespace Random
             var amint = Convert.ToSingle(amount);
             if (amint > hpint)
             {
+                //kill exploded player
+                var cause = newCause;
+                if (cause == EDeathCause.CHARGE || cause == EDeathCause.GRENADE || cause == EDeathCause.LANDMINE || cause == EDeathCause.MISSILE)
+                {
+                    UnturnedChat.Say("hp is " + hpint + " and dmg is " + amint);
+                    MedicalSystemR.Instance.tokill.Add(player);
+                    MedicalSystemR.Instance.delaykill(player, newRagdoll, newCause, newLimb, newKiller, false, ERagdollEffect.NONE, true);
+                    return false;
+
+                }
                 amint = hpint - 1;
                 amount = Convert.ToByte(amint);
-                changestate cs = new changestate();
-                cs.downplayer(player, newRagdoll, newCause, newLimb, newKiller, false, ERagdollEffect.NONE, true);
+                MedicalSystemR.Instance.downplayer(player, newRagdoll, newCause, newLimb, newKiller, false, ERagdollEffect.NONE, true);
 
             }
             return true;

@@ -10,10 +10,12 @@ namespace Random
     public class MedicalSystemRConfiguration : IRocketPluginConfiguration
     {
         public float downtime;
+        public float explosionairtime;
 
         public void LoadDefaults()
         {
             downtime = 30;
+            explosionairtime = 0.7f;
         }
     }
 }
