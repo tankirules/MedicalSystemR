@@ -66,6 +66,8 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="changestate.cs" />
+    <Compile Include="MedicalSystemRConfiguration.cs" />
     <Compile Include="MedicalSystemR.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
