@@ -11,11 +11,13 @@ namespace Random
     {
         public float downtime;
         public float explosionairtime;
+        public byte downedhp;
 
         public void LoadDefaults()
         {
-            downtime = 30;
+            downtime = 30.0f;
             explosionairtime = 0.7f;
+            downedhp = 40;
         }
     }
 }

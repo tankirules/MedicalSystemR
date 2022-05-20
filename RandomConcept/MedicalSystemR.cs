@@ -15,6 +15,7 @@ using UnityEngine;
 using System.Collections;
 using Rocket.Unturned.Player;
 
+
 namespace Random
 {
 
@@ -86,6 +87,7 @@ namespace Random
             para.damage = 100f;
             DamageTool.damagePlayer(para, out EPlayerKill kill);
             player.movement.sendPluginSpeedMultiplier(1f);
+            player.movement.sendPluginGravityMultiplier(1f);
 
 
 
@@ -195,8 +197,9 @@ namespace Random
     [HarmonyPatch(typeof(PlayerLife), "doDamage")]
     class patch2
     {
-        static bool Prefix(PlayerLife __instance, ref byte amount, Vector3 newRagdoll, EDeathCause newCause, ELimb newLimb, CSteamID newKiller, out EPlayerKill kill, bool trackKill = false, ERagdollEffect newRagdollEffect = ERagdollEffect.NONE, bool canCauseBleeding = true)
+        static bool Prefix(PlayerLife __instance, ref byte amount, Vector3 newRagdoll, EDeathCause newCause, ELimb newLimb, CSteamID newKiller, out EPlayerKill kill, bool trackKill = false, ERagdollEffect newRagdollEffect = ERagdollEffect.NONE,ref bool canCauseBleeding)
         {
+            UnturnedChat.Say("prefix triggered");
             kill = EPlayerKill.NONE;
             var player = __instance.player;
 
@@ -204,12 +207,6 @@ namespace Random
             if (newLimb == ELimb.SKULL)
             {
                 return true;
-            }
-            //ignore damage on downed player
-            if (MedicalSystemR.Instance.downedplayers.Contains(player) == true)
-            {
-                //skip prefix and skip original method
-                return false;
             }
             //kill a downed player
             //THIS must be before explodekill
@@ -222,33 +219,38 @@ namespace Random
                 //skip prefix, and execute original method
                 return true;
             }
-
-
-
-
-
-
             //this downs a player
-            //TODO: ADD TIMER
             var hp = player.life.health;
-            var hpint = Convert.ToSingle(hp);
-            var amint = Convert.ToSingle(amount);
-            if (amint > hpint)
+            if (hp < amount)
             {
+                //downed p layer has been killed
+                if (MedicalSystemR.Instance.downedplayers.Contains(player))
+                {
+                    MedicalSystemR.Instance.downedplayers.Remove(player);
+                    player.movement.sendPluginSpeedMultiplier(1f);
+                    return true;
+                }
                 //kill exploded player
                 var cause = newCause;
                 if (cause == EDeathCause.CHARGE || cause == EDeathCause.GRENADE || cause == EDeathCause.LANDMINE || cause == EDeathCause.MISSILE)
                 {
-                    UnturnedChat.Say("hp is " + hpint + " and dmg is " + amint);
+                    UnturnedChat.Say("hp is " + hp + " and dmg is " + amount);
+                    player.movement.sendPluginGravityMultiplier(0f);
                     MedicalSystemR.Instance.tokill.Add(player);
                     MedicalSystemR.Instance.delaykill(player, newRagdoll, newCause, newLimb, newKiller, false, ERagdollEffect.NONE, true);
                     return false;
 
                 }
-                amint = hpint - 1;
-                amount = Convert.ToByte(amint);
+                //healing and stopping bleeding not working???
+                player.life.serverSetBleeding(false);
+                player.life.askHeal((byte)(MedicalSystemR.Instance.Configuration.Instance.downedhp), true, true);
                 MedicalSystemR.Instance.downplayer(player, newRagdoll, newCause, newLimb, newKiller, false, ERagdollEffect.NONE, true);
-
+                
+                UnturnedChat.Say("healing for " + (MedicalSystemR.Instance.Configuration.Instance.downedhp) + " hp");
+                amount = 0;
+                UnturnedChat.Say("hp is " + hp + " and dmg is " + amount);
+                
+                return false;
             }
             return true;
 
