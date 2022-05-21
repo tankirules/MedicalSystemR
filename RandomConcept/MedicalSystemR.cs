@@ -28,6 +28,7 @@ namespace Random
         //this list contains the players who should die
         public List<Player> tokill = new List<Player>();
         public List<Player> explodekill = new List<Player>();
+        Dictionary<Player, Coroutine> pcDict = new Dictionary<Player, Coroutine>();
         protected override void Load()
         {
             Instance = this;
@@ -35,6 +36,7 @@ namespace Random
             var harmony = new Harmony("com.random.medicalsystemr");
             harmony.PatchAll();
 
+            UseableConsumeable.onPerformedAid += onPerformedAid;
             PlayerLife.OnSelectingRespawnPoint += OnPlayerRespawn;
             DamageTool.damagePlayerRequested += DamagePlayerRequested;
             U.Events.OnPlayerDisconnected += OnPlayerDisconnection;
@@ -44,10 +46,12 @@ namespace Random
 
 
         }
-        
+
+
 
         protected override void Unload()
         {
+            UseableConsumeable.onPerformedAid -= onPerformedAid;
             PlayerLife.OnSelectingRespawnPoint -= OnPlayerRespawn;
             DamageTool.damagePlayerRequested -= DamagePlayerRequested;
             U.Events.OnPlayerDisconnected -= OnPlayerDisconnection;
@@ -70,7 +74,13 @@ namespace Random
             var p = player.Player;
             downedplayers.Remove(p);
             tokill.Remove(p);
-
+            //stop coroutine
+            pcDict.TryGetValue(p, out var cor);
+            if (!(cor == null))
+            {
+                StopCoroutine(cor);
+            }
+            pcDict.Remove(p);
         }
 
         private void OnPlayerRespawn(PlayerLife sender, bool wantsToSpawnAtHome, ref Vector3 position, ref float yaw)
@@ -80,22 +90,62 @@ namespace Random
             downedplayers.Remove(player);
             tokill.Remove(player);
             explodekill.Remove(player);
+            player.equipment.canEquip = true;
+            //stop coroutine
+            pcDict.TryGetValue(player, out var cor);
+            if (!(cor == null))
+            {
+                StopCoroutine(cor);
+            }
+            pcDict.Remove(player);
+
+            player.movement.sendPluginGravityMultiplier(1f);
+            player.movement.sendPluginSpeedMultiplier(1f);
+        }
+
+        //check if reviving
+        public void onPerformedAid(Player instigator, Player target)
+        {
+            //TODO: CHECK IF PLAYER IS ALLOWED EG TEAM AND ROLE?
+            if (downedplayers.Contains(target))
+            {
+                upplayer(target);
+            }
+        }
+
+        public void upplayer(Player player)
+        {
+            downedplayers.Remove(player);
+            player.movement.sendPluginSpeedMultiplier(1f);
+            //set players hp to reivve hp
+            var dmg = (byte)(player.life.health - Config.revivehp);
+            player.life.askDamage(dmg, Vector3.up, EDeathCause.SUICIDE, ELimb.SPINE, CSteamID.Nil, out EPlayerKill kill, false, ERagdollEffect.NONE, false);
+            //stop coroutine
+            pcDict.TryGetValue(player, out var cor);
+            if (!(cor == null))
+            {
+                StopCoroutine(cor);
+            }
+            pcDict.Remove(player);
+            player.equipment.canEquip = true;
+
         }
 
         //CODE FOR A DELAY KILL FROM EXPLOSION
-        public void delaykill(DamagePlayerParameters parameters)
+        public void delaykill(Player player, byte amount, Vector3 newRagdoll, EDeathCause newCause, ELimb newLimb, CSteamID newKiller, out EPlayerKill kill, bool trackKill = false, ERagdollEffect newRagdollEffect = ERagdollEffect.NONE, bool canCauseBleeding = true)
         {
-            StartCoroutine(Delayedkill(parameters));
+            kill = EPlayerKill.NONE;
+            StartCoroutine(Delayedkill(player, amount, newRagdoll, newCause, newLimb, newKiller, false, ERagdollEffect.NONE, true));
 
         }
-        public IEnumerator Delayedkill(DamagePlayerParameters parameters)
+        public IEnumerator Delayedkill(Player player, byte amount, Vector3 newRagdoll, EDeathCause newCause, ELimb newLimb, CSteamID newKiller, bool trackKill = false, ERagdollEffect newRagdollEffect = ERagdollEffect.NONE, bool canCauseBleeding = true)
         {
+            var kill = EPlayerKill.NONE;
             UnturnedChat.Say("bam!");
             yield return new WaitForSeconds(MedicalSystemR.Instance.Configuration.Instance.explosionairtime);
-            var player = parameters.player;
             MedicalSystemR.Instance.tokill.Add(player);
-            parameters.damage = 500;
-            DamageTool.damagePlayer(parameters, out EPlayerKill kill);
+
+            player.life.askDamage(amount, newRagdoll, newCause, newLimb, newKiller, out kill, false, ERagdollEffect.NONE, true);
             player.movement.sendPluginSpeedMultiplier(1f);
             player.movement.sendPluginGravityMultiplier(1f);
 
@@ -105,7 +155,9 @@ namespace Random
         }
         //CODE FOR DOWNING PLAYERS AND HNALDING IT HERE
         public void downplayer(DamagePlayerParameters parameters)
-            {
+        {
+            
+
             var player = parameters.player;
             //add to downed list
             Random.MedicalSystemR.Instance.downedplayers.Add(player);
@@ -118,14 +170,13 @@ namespace Random
 
             //var tempgo = new GameObject();
             //down d = tempgo.AddComponent<down>();
-            //d.startcor(player, newRagdoll, newCause, newLimb, newKiller, false, ERagdollEffect.NONE, true);
-            startcor(parameters);
+            //d.startcor(player, newRagdoll, newCause, newLimb, newKiller, false, ERagdollEffect.NONE, true);            
+            var co = StartCoroutine(Downtimer(parameters));
+            pcDict[player] = co;
+
+
         }
-        public void startcor(DamagePlayerParameters parameters)
-        {
-            StartCoroutine(Downtimer(parameters));
-        }
-        
+
         //THIS HANDLES A PLAYER BEING DOWNWED
         public IEnumerator Downtimer(DamagePlayerParameters parameters)
         {
@@ -148,7 +199,7 @@ namespace Random
 
 
 
-            
+
         }
 
         private void DamagePlayerRequested(ref DamagePlayerParameters parameters, ref bool shouldAllow)
@@ -171,6 +222,14 @@ namespace Random
                 //skip prefix, and execute original method
                 player.movement.sendPluginSpeedMultiplier(1f);
                 shouldAllow = true;
+                //remove corotuine
+                pcDict.TryGetValue(player, out var cor);
+                if (!(cor == null))
+                {
+                    StopCoroutine(cor);
+                }
+                
+                pcDict.Remove(player);
                 return;
             }
             //this downs a player
@@ -190,27 +249,44 @@ namespace Random
                 UnturnedChat.Say("cause is " + cause);
                 if (cause == EDeathCause.CHARGE || cause == EDeathCause.GRENADE || cause == EDeathCause.LANDMINE || cause == EDeathCause.MISSILE || cause == EDeathCause.SPLASH)
                 {
-                    UnturnedChat.Say("hp is " + hp + " and dmg is " + parameters.damage);
-                    player.movement.sendPluginGravityMultiplier(0f);
-                    MedicalSystemR.Instance.tokill.Add(player);
-                    MedicalSystemR.Instance.delaykill(parameters);
-                    shouldAllow = false;
+                    //HANDLE EXLOSIONS WITH DODAMAGE PREFIX AS IT IS MORE ACCURATE
+                    shouldAllow = true;
                     return;
                 }
-                //healing and stopping bleeding not working???
+                
                 player.life.serverSetBleeding(false);
-                player.life.askHeal((MedicalSystemR.Instance.Configuration.Instance.downedhp), true, true);
+                //set players heaklth to downed hp
+                if (player.life.health > MedicalSystemR.Instance.Configuration.Instance.downedhp)
+                {
+                    parameters.damage = MedicalSystemR.Instance.Configuration.Instance.downedhp - player.life.health;
+                }
+                else
+                {
+                    player.life.askHeal((byte)(MedicalSystemR.Instance.Configuration.Instance.downedhp - player.life.health), true, true);
+                    parameters.damage = 0;
+                }
+
+
                 MedicalSystemR.Instance.downplayer(parameters);
 
-                UnturnedChat.Say("healing for " + (MedicalSystemR.Instance.Configuration.Instance.downedhp) + " hp");
+                
+                //prevent equippipng
+                player.equipment.dequip();
+                player.equipment.canEquip = false;
+
+                UnturnedChat.Say("healing for " + (MedicalSystemR.Instance.Configuration.Instance.downedhp - 1) + " hp");
                 UnturnedChat.Say("hp is " + hp + " and dmg is " + parameters.damage);
-                shouldAllow = false;
+                shouldAllow = true;
+                
                 return;
             }
             return;
         }
 
+
     }
+
+
     public class stancewrapper
     {
         public stancewrapper(Player player)
@@ -238,96 +314,51 @@ namespace Random
         
     }
 
-
-    /*[HarmonyPatch(typeof(DamageTool), "damagePlayer")]
-    class patch3
+    [HarmonyPatch(typeof(PlayerLife), "doDamage")]
+    class patch
     {
-        static void Prefix(DamagePlayerParameters parameters, out EPlayerKill kill)
+        static bool Prefix(PlayerLife __instance, byte amount, Vector3 newRagdoll, EDeathCause newCause, ELimb newLimb, CSteamID newKiller, out EPlayerKill kill, bool trackKill = false, ERagdollEffect newRagdollEffect = ERagdollEffect.NONE, bool canCauseBleeding = true)
         {
-            //kill = EPlayerKill.NONE;
-            //var cause = parameters.cause;
+            kill = EPlayerKill.NONE;
+            var cause = newCause;
+            var player = __instance.player;
+            //ONLY HANDLE EXPLOSIONS
+            if (cause == EDeathCause.CHARGE || cause == EDeathCause.GRENADE || cause == EDeathCause.LANDMINE || cause == EDeathCause.MISSILE || cause == EDeathCause.SPLASH)
+            {
+                if (MedicalSystemR.Instance.tokill.Contains(player))
+                {
+                    MedicalSystemR.Instance.tokill.Remove(player);
+                    return true;
+                }
+                if (player.life.health < amount)
+                {
+                    UnturnedChat.Say("hp is " + player.life.health + " and dmg is " + amount);
+                    player.movement.sendPluginGravityMultiplier(MedicalSystemR.Instance.Configuration.Instance.explosiongrav);
+                    MedicalSystemR.Instance.tokill.Add(player);
+                    MedicalSystemR.Instance.delaykill(player,amount, newRagdoll, newCause, newLimb, newKiller, out kill, false,  ERagdollEffect.NONE,  true);
+                    return false;
+                }
+
+            }
+
             
-
-            //if (cause == EDeathCause.CHARGE || cause == EDeathCause.GRENADE || cause == EDeathCause.LANDMINE || cause == EDeathCause.MISSILE || cause == EDeathCause.SPLASH)
-            //{
-            //    var hp = parameters.player.life.health;
-            //    var dmg = parameters.damage;
-            //    var hpf = Convert.ToSingle(hp);
-            //    if (hpf < dmg)
-            //    {
-            //        MedicalSystemR.Instance.explodekill.Add(parameters.player);
-            //    }
-                
-            //}
-
+            UnturnedChat.Say("doing " + amount + " damage");
+            return true;
         }
-    }*/
-
-
-    ////patch damage
-    //[HarmonyPatch(typeof(PlayerLife), "doDamage")]
-    //class patch2
+    }
+    //harmony cant find the correct method
+    //[HarmonyPatch(typeof(DamageTool), "explode", typeof(ExplosionParameters))]
+    //class patch
     //{
-    //    static bool Prefix(PlayerLife __instance, ref byte amount, Vector3 newRagdoll, EDeathCause newCause, ELimb newLimb, CSteamID newKiller, out EPlayerKill kill, bool trackKill = false, ERagdollEffect newRagdollEffect = ERagdollEffect.NONE,ref bool canCauseBleeding)
+    //    static void Prefix(ref ExplosionParameters parameters, out List<EPlayerKill> kills)
     //    {
-            
-
+    //        kills = new List<EPlayerKill>();
+    //        UnturnedChat.Say("look at her go!");
+    //        parameters.launchSpeed = parameters.launchSpeed * MedicalSystemR.Instance.Configuration.Instance.explforcemult;
     //    }
     //}
 
 
-
-    //[HarmonyPatch(typeof(PlayerAnimator), "sendGesture")]
-    //class Patch1
-    //{
-    //    static void Prefix(EPlayerGesture gesture, ref bool all)
-    //    {
-    //        all = true;
-    //        UnturnedChat.Say("Gesture Sent!");
-    //    }
-    //}
-    //[HarmonyPatch(typeof(DamageTool), "damagePlayer")]
-    //class Patch
-    //{
-    //    static bool Prefix(ref DamagePlayerParameters parameters, out EPlayerKill kill)
-    //    {
-    //        kill = EPlayerKill.NONE;
-    //        var player = parameters.player;
-
-    //        //ignore damage on downed player
-    //        if (MedicalSystemR.Instance.downedplayers.Contains(player) == true)
-    //        {
-    //            //skip prefix and skip original method
-    //            return false;
-    //        }
-
-    //        //kill a downed player
-    //        if ((MedicalSystemR.Instance.tokill.Contains(player) == true))
-    //        {
-    //            //remove them from the list of doomed players
-    //            MedicalSystemR.Instance.tokill.Remove(player);
-    //            //skip prefix, and execute original method
-    //            return true;
-    //        }
-
-
-
-
-    //        var hp = player.life.health;
-    //        var hpint = Convert.ToSingle(hp);
-    //        if (parameters.damage > hpint)
-    //        {
-    //            parameters.damage = hpint - 1;
-    //            MedicalSystemR.Instance.downedplayers.Add(player);
-    //            var pronestance = EPlayerStance.PRONE;
-    //            player.stance.checkStance(pronestance, true);
-
-    //        }
-    //        parameters.bleedingModifier = DamagePlayerParameters.Bleeding.Never;
-    //        return true;
-
-    //    }
-    //}
 
 
 

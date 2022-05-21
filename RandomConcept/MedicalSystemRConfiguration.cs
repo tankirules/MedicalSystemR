@@ -12,12 +12,18 @@ namespace Random
         public float downtime;
         public float explosionairtime;
         public byte downedhp;
+        public float explosiongrav;
+        public float explforcemult;
+        public byte revivehp;
 
         public void LoadDefaults()
         {
             downtime = 30.0f;
-            explosionairtime = 0.7f;
+            explosionairtime = 0.5f;
             downedhp = 40;
+            explosiongrav = -0.1f;
+            explforcemult = 2f;
+            revivehp = 1;
         }
     }
 }
