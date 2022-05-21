@@ -204,6 +204,8 @@ namespace Random
 
         private void DamagePlayerRequested(ref DamagePlayerParameters parameters, ref bool shouldAllow)
         {
+            UnturnedChat.Say("Requested damage : " + parameters.damage);
+
             var player = parameters.player;
             //instalkill headshot player
             if (parameters.limb == ELimb.SKULL)
