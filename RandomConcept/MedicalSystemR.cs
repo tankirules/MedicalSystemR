@@ -26,6 +26,7 @@ namespace Random
         public int keyc;
         public ushort downUIid;
         public ushort suicidebutid;
+        public ushort medicid;
         public static MedicalSystemR Instance;
         public static MedicalSystemRConfiguration Config;
         //pretty sure rocket has this or something but I cant find it
@@ -41,7 +42,7 @@ namespace Random
         public Dictionary<Player, DamagePlayerParameters> pdDict;
         protected override void Load()
         {
-
+            medicid = 19910;
             suicidebutid = 19911;
             downUIid = 19912;
             keyc = 0;
@@ -162,7 +163,7 @@ namespace Random
                     //TODO: changable effect id
                     UnturnedPlayer up = UnturnedPlayer.FromPlayer(p);
                     SteamPlayer sp = player.Player.channel.owner;
-                    EffectManager.sendEffect(61, sp.transportConnection, up.Position);
+                    EffectManager.sendEffect(medicid, sp.transportConnection, up.Position);
                 }
             }
 
