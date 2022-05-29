@@ -19,9 +19,9 @@ namespace Random
         public void LoadDefaults()
         {
             downtime = 30.0f;
-            explosionairtime = 0.5f;
+            explosionairtime = 0.35f;
             downedhp = 40;
-            explosiongrav = -0.1f;
+            explosiongrav = 0f;
             explforcemult = 2f;
             revivehp = 1;
         }

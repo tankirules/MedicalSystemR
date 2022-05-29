@@ -14,3 +14,4 @@ E:\GITHUB\RandomConcept\RandomConcept\obj\Debug\RandomConcept.csproj.CopyComplet
 E:\GITHUB\RandomConcept\RandomConcept\obj\Debug\MedicalSystemR.dll
 E:\GITHUB\RandomConcept\RandomConcept\obj\Debug\MedicalSystemR.pdb
 E:\GITHUB\RandomConcept\RandomConcept\obj\Debug\RandomConcept.csprojAssemblyReference.cache
+E:\GITHUB\RandomConcept\RandomConcept\bin\Debug\SDG.NetTransport.dll
