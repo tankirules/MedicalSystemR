@@ -157,6 +157,11 @@ namespace Random
         {
             foreach (UnturnedPlayer player in Instance.ListPlayers)
             {
+                // if player doesnt have medic perms, skip sending them the effect
+                if (!(player.HasPermission("MedicalSystemR.medic")))
+                {
+                    continue;
+                }
                 //TODO: only show downed symbol for medics
                 foreach (Player p in Instance.downedplayers)
                 {
