@@ -122,7 +122,7 @@ namespace Random
             }
             pcDict.Remove(player);
             //JUST CLEAR UI PLS
-            
+            downedplayers.Remove(player);
             EffectManager.askEffectClearByID(downUIid, player.channel.owner.transportConnection);
             EffectManager.askEffectClearByID(suicidebutid, player.channel.owner.transportConnection);
 
@@ -160,10 +160,13 @@ namespace Random
                 //TODO: only show downed symbol for medics
                 foreach (Player p in Instance.downedplayers)
                 {
+                    ////UnturnedChat.Say("Sending effect");
                     //TODO: changable effect id
                     UnturnedPlayer up = UnturnedPlayer.FromPlayer(p);
                     SteamPlayer sp = player.Player.channel.owner;
-                    EffectManager.sendEffect(medicid, sp.transportConnection, up.Position);
+                    var pos = up.Position;
+                    pos.y = pos.y + Config.offsety;
+                    EffectManager.sendEffect(medicid, sp.transportConnection, pos);
                 }
             }
 
@@ -196,7 +199,7 @@ namespace Random
         private void OnPlayerRespawn(PlayerLife sender, bool wantsToSpawnAtHome, ref Vector3 position, ref float yaw)
         {
             var player = sender.player;
-            UnturnedChat.Say("respawned aksed");
+            //UnturnedChat.Say("respawned aksed");
             downedplayers.Remove(player);
             tokill.Remove(player);
             explodekill.Remove(player);
@@ -257,7 +260,7 @@ namespace Random
         public IEnumerator Delayedkill(Player player, byte amount, Vector3 newRagdoll, EDeathCause newCause, ELimb newLimb, CSteamID newKiller, bool trackKill = false, ERagdollEffect newRagdollEffect = ERagdollEffect.NONE, bool canCauseBleeding = true)
         {
             var kill = EPlayerKill.NONE;
-            UnturnedChat.Say("doing delayed kill");
+            //UnturnedChat.Say("doing delayed kill");
             yield return new WaitForSeconds(MedicalSystemR.Instance.Configuration.Instance.explosionairtime);
             MedicalSystemR.Instance.tokill.Add(player);
 
@@ -306,7 +309,7 @@ namespace Random
         {
             float seconds = MedicalSystemR.Instance.Configuration.Instance.downtime;
             //wait the downed amount of time
-            UnturnedChat.Say("Downed for " + MedicalSystemR.Instance.Configuration.Instance.downtime + " seconds");
+            //UnturnedChat.Say("Downed for " + MedicalSystemR.Instance.Configuration.Instance.downtime + " seconds");
             var key = keyc;
             keyc = key + 2;
             EffectManager.sendUIEffect(suicidebutid, (short)(key + 1), player.channel.owner.transportConnection, true);
@@ -319,7 +322,7 @@ namespace Random
                 seconds = seconds - 1;
             }            
             //if player still downed
-            UnturnedChat.Say("doing final down check");
+            //UnturnedChat.Say("doing final down check");
 
             if (downedplayers.Contains(player))
             {
@@ -348,7 +351,7 @@ namespace Random
         }
         public void OnStanceUpdated()
         {
-            //UnturnedChat.Say("stance change detected");
+            ////UnturnedChat.Say("stance change detected");
 
             if (MedicalSystemR.Instance.downedplayers.Contains(W_player))
             {
@@ -367,7 +370,7 @@ namespace Random
     {
         static bool Prefix(PlayerLife __instance, ref byte amount, Vector3 newRagdoll, EDeathCause newCause, ELimb newLimb, CSteamID newKiller, out EPlayerKill kill, bool trackKill = false, ERagdollEffect newRagdollEffect = ERagdollEffect.NONE, bool canCauseBleeding = true)
         {
-            UnturnedChat.Say("doing " + amount + " damage");
+            //UnturnedChat.Say("doing " + amount + " damage");
             kill = EPlayerKill.NONE;
             var cause = newCause;
             var player = __instance.player;
@@ -396,7 +399,7 @@ namespace Random
 
                 EffectManager.askEffectClearByID(MedicalSystemR.Instance.downUIid, player.channel.owner.transportConnection);
                 EffectManager.askEffectClearByID(MedicalSystemR.Instance.suicidebutid, player.channel.owner.transportConnection);
-                UnturnedChat.Say("clearing effects");
+                //UnturnedChat.Say("clearing effects");
                 return true;
             }
             //this downs a player
@@ -420,7 +423,7 @@ namespace Random
                     }
                     if (hp <= amount)
                     {
-                        UnturnedChat.Say("hp is " + player.life.health + " and dmg is " + amount);
+                        //UnturnedChat.Say("hp is " + player.life.health + " and dmg is " + amount);
                         player.movement.sendPluginGravityMultiplier(MedicalSystemR.Instance.Configuration.Instance.explosiongrav);
                         MedicalSystemR.Instance.tokill.Add(player);
                         MedicalSystemR.Instance.delaykill(player, amount, newRagdoll, newCause, newLimb, newKiller, out kill, false, ERagdollEffect.NONE, true);
@@ -449,8 +452,8 @@ namespace Random
                 player.equipment.dequip();
                 player.equipment.canEquip = false;
 
-                UnturnedChat.Say("healing for " + (MedicalSystemR.Instance.Configuration.Instance.downedhp - 1) + " hp");
-                UnturnedChat.Say("hp is " + hp + " and dmg is " + amount);
+                //UnturnedChat.Say("healing for " + (MedicalSystemR.Instance.Configuration.Instance.downedhp - 1) + " hp");
+                //UnturnedChat.Say("hp is " + hp + " and dmg is " + amount);
                 return true;
 
 
@@ -464,7 +467,7 @@ namespace Random
     {
         static void Prefix(ref ExplosionParameters parameters, out List<EPlayerKill> kills)
         {
-            UnturnedChat.Say("explode triggered");
+            //UnturnedChat.Say("explode triggered");
             kills = new List<EPlayerKill>();
             parameters.launchSpeed = parameters.launchSpeed * MedicalSystemR.Instance.Configuration.Instance.explforcemult;
         }
@@ -476,7 +479,7 @@ namespace Random
     //    static void Prefix(ref ExplosionParameters parameters, out List<EPlayerKill> kills)
     //    {
     //        kills = new List<EPlayerKill>();
-    //        UnturnedChat.Say("look at her go!");
+    //        //UnturnedChat.Say("look at her go!");
     //        parameters.launchSpeed = parameters.launchSpeed * MedicalSystemR.Instance.Configuration.Instance.explforcemult;
     //    }
     //}

@@ -15,7 +15,7 @@ namespace Random
         public float explosiongrav;
         public float explforcemult;
         public byte revivehp;
-
+        public int offsety;
         public void LoadDefaults()
         {
             downtime = 30.0f;
@@ -24,6 +24,7 @@ namespace Random
             explosiongrav = 0f;
             explforcemult = 2f;
             revivehp = 1;
+            offsety = 2;
         }
     }
 }

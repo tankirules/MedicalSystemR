@@ -51,6 +51,9 @@ namespace Random
                 case "revivehp":
                     MedicalSystemR.Instance.Configuration.Instance.revivehp = Convert.ToByte(value);
                     break;
+                case "offsety":
+                    MedicalSystemR.Instance.Configuration.Instance.offsety = Convert.ToInt32(value);
+                    break;
                 default:
                     UnturnedChat.Say(caller, "No config field found!", Color.red);
                     break;
