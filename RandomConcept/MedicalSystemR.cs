@@ -39,6 +39,7 @@ namespace Random
         public List<Player> tokill;
         public List<Player> explodekill;
         public Dictionary<Player, Coroutine> pcDict;
+        //public Dictionary<Player, Coroutine> downtimerDict;
         public Dictionary<Player, DamagePlayerParameters> pdDict;
         protected override void Load()
         {
@@ -50,6 +51,7 @@ namespace Random
 
             pdDict = new Dictionary<Player, DamagePlayerParameters>();
             pcDict = new Dictionary<Player, Coroutine>();
+            //downtimerDict = new Dictionary<Player, Coroutine>();
             explodekill = new List<Player>();
             tokill = new List<Player>();
             downedplayers = new List<Player>();
@@ -107,6 +109,11 @@ namespace Random
             {
                 StopCoroutine(entry.Value);
             }
+            ////stop coroutines
+            //foreach (KeyValuePair<Player, Coroutine> entry in downtimerDict)
+            //{
+            //    StopCoroutine(entry.Value);
+            //}
 
 
             Rocket.Core.Logging.Logger.Log("Random's Med unloaded");
@@ -121,6 +128,12 @@ namespace Random
                 StopCoroutine(cor);
             }
             pcDict.Remove(player);
+            //downtimerDict.TryGetValue(player, out var dcor);
+            //if (!(dcor == null))
+            //{
+            //    StopCoroutine(dcor);
+            //}
+            //downtimerDict.Remove(player);
             //JUST CLEAR UI PLS
             downedplayers.Remove(player);
             EffectManager.askEffectClearByID(downUIid, player.channel.owner.transportConnection);
@@ -142,15 +155,41 @@ namespace Random
 
             //kill player
             var DPP = pdDict[player];
+            
             player.life.askDamage(200, DPP.direction, DPP.cause, DPP.limb, DPP.killer, out EPlayerKill kill);
             pcDict.TryGetValue(player, out var cor);
+
             if (!(cor == null))
             {
                 StopCoroutine(cor);
             }
+            //EXTRA FIX HERE FOR REGIONS : IF GODMODE IS ON FOR REGIONS, THIS WILL ATTEMPT TO FIX EXPLODING IN VEHICLES
             pcDict.Remove(player);
+            downedplayers.Remove(player);
+            tokill.Remove(player);
+            explodekill.Remove(player);
+            player.equipment.canEquip = true;
+
+            EffectManager.askEffectClearByID(downUIid, player.channel.owner.transportConnection);
+            EffectManager.askEffectClearByID(suicidebutid, player.channel.owner.transportConnection);
 
 
+            player.movement.sendPluginGravityMultiplier(1f);
+            player.movement.sendPluginSpeedMultiplier(1f);
+            //TODO: BELOW IS BREAKING PLUGIN??
+            //clear timer PLEASE
+            pcDict.TryGetValue(player, out cor);
+            //MedicalsystemR.HQ
+            if (!(cor == null))
+            {
+                StopCoroutine(cor);
+            }
+            //downtimerDict.TryGetValue(player, out var dcor);
+
+            //if (!(dcor == null))
+            //{
+            //    StopCoroutine(dcor);
+            //}
         }
 
         public void senddowneffect()
@@ -199,8 +238,16 @@ namespace Random
                 StopCoroutine(cor);
             }
             pcDict.Remove(p);
-        }
 
+            //downtimerDict.TryGetValue(p, out var dcor);
+
+            //if (!(dcor == null))
+            //{
+            //    StopCoroutine(dcor);
+            //}
+            //downtimerDict.Remove(p);
+        }
+        
         private void OnPlayerRespawn(PlayerLife sender, bool wantsToSpawnAtHome, ref Vector3 position, ref float yaw)
         {
             var player = sender.player;
@@ -219,6 +266,14 @@ namespace Random
                 StopCoroutine(cor);
             }
             pcDict.Remove(player);
+
+            //downtimerDict.TryGetValue(player, out var dcor);
+
+            //if (!(dcor == null))
+            //{
+            //    StopCoroutine(dcor);
+            //}
+            //downtimerDict.Remove(player);
 
             player.movement.sendPluginGravityMultiplier(1f);
             player.movement.sendPluginSpeedMultiplier(1f);
@@ -248,6 +303,14 @@ namespace Random
                 StopCoroutine(cor);
             }
             pcDict.Remove(player);
+
+            //downtimerDict.TryGetValue(player, out var dcor);
+            //if (!(dcor == null))
+            //{
+            //    StopCoroutine(dcor);
+            //}
+            //downtimerDict.Remove(player);
+
             player.equipment.canEquip = true;
             //clear UI effect
             EffectManager.askEffectClearByID(19912, player.channel.owner.transportConnection);
@@ -272,6 +335,16 @@ namespace Random
             player.life.askDamage(amount, newRagdoll, newCause, newLimb, newKiller, out kill, false, ERagdollEffect.NONE, true);
             player.movement.sendPluginSpeedMultiplier(1f);
             player.movement.sendPluginGravityMultiplier(1f);
+            pcDict.Remove(player);
+            downedplayers.Remove(player);
+            explodekill.Remove(player);
+            player.equipment.canEquip = true;
+
+            EffectManager.askEffectClearByID(downUIid, player.channel.owner.transportConnection);
+            EffectManager.askEffectClearByID(suicidebutid, player.channel.owner.transportConnection);
+            //downtimerDict.Remove(player);
+
+
 
 
 
@@ -293,6 +366,11 @@ namespace Random
             //down d = tempgo.AddComponent<down>();
             //d.startcor(player, newRagdoll, newCause, newLimb, newKiller, false, ERagdollEffect.NONE, true);
             var kill = EPlayerKill.PLAYER;
+            //ACOUNT FOR HQ REGION BUG
+            if (downedplayers.Contains(player))
+            {
+
+            }
             var co = StartCoroutine(Downtimer(player, amount, newRagdoll, newCause, newLimb, newKiller, false, ERagdollEffect.NONE, true));
             pcDict[player] = co;
 
@@ -312,6 +390,13 @@ namespace Random
         //THIS HANDLES A PLAYER BEING DOWNWED
         public IEnumerator Downtimer(Player player, byte amount, Vector3 newRagdoll, EDeathCause newCause, ELimb newLimb, CSteamID newKiller, bool trackKill = false, ERagdollEffect newRagdollEffect = ERagdollEffect.NONE, bool canCauseBleeding = true)
         {
+            //UnturnedChat.Say("Downtimer started");
+            //handle fake downs caused by godmode region
+            if (!(downedplayers.Contains(player)))
+            {
+                UnturnedChat.Say("player not in thing");
+                StopCoroutine("Downtimer");
+            }
             float seconds = MedicalSystemR.Instance.Configuration.Instance.downtime;
             //wait the downed amount of time
             //UnturnedChat.Say("Downed for " + MedicalSystemR.Instance.Configuration.Instance.downtime + " seconds");
@@ -375,10 +460,20 @@ namespace Random
     {
         static bool Prefix(PlayerLife __instance, ref byte amount, Vector3 newRagdoll, EDeathCause newCause, ELimb newLimb, CSteamID newKiller, out EPlayerKill kill, bool trackKill = false, ERagdollEffect newRagdollEffect = ERagdollEffect.NONE, bool canCauseBleeding = true)
         {
+            //ACCOUNT FOR HQ REGIONS
+           
             //UnturnedChat.Say("doing " + amount + " damage");
             kill = EPlayerKill.NONE;
             var cause = newCause;
             var player = __instance.player;
+            var rockplayer = UnturnedPlayer.FromPlayer(player);
+            var newr = new RocketPlayer(rockplayer.Id);
+            if (newr.HasPermission("MedicalSystemR.HQ"))
+            {
+                return true;
+            }
+
+
             //instakill headshot player
             if (newLimb == ELimb.SKULL)
             {

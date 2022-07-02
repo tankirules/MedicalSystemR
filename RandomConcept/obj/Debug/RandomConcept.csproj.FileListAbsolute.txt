@@ -13,5 +13,5 @@ E:\GITHUB\RandomConcept\RandomConcept\bin\Debug\0Harmony.xml
 E:\GITHUB\RandomConcept\RandomConcept\obj\Debug\RandomConcept.csproj.CopyComplete
 E:\GITHUB\RandomConcept\RandomConcept\obj\Debug\MedicalSystemR.dll
 E:\GITHUB\RandomConcept\RandomConcept\obj\Debug\MedicalSystemR.pdb
-E:\GITHUB\RandomConcept\RandomConcept\obj\Debug\RandomConcept.csprojAssemblyReference.cache
 E:\GITHUB\RandomConcept\RandomConcept\bin\Debug\SDG.NetTransport.dll
+E:\GITHUB\RandomConcept\RandomConcept\obj\Debug\RandomConcept.csproj.AssemblyReference.cache
