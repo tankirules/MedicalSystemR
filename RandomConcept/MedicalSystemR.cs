@@ -285,17 +285,32 @@ namespace Random
             //TODO: CHECK IF PLAYER IS ALLOWED EG TEAM AND ROLE?
             if (downedplayers.Contains(target))
             {
-                upplayer(target);
+                if (UnturnedPlayer.FromPlayer(instigator).HasPermission("MedicalSystemR.medic"))
+                {
+                    upplayer(target, false);
+                }
+                else
+                {
+                    upplayer(target, true);
+                }
+                
             }
         }
 
-        public void upplayer(Player player)
+        public void upplayer(Player player, bool breaklegs)
         {
             downedplayers.Remove(player);
             player.movement.sendPluginSpeedMultiplier(1f);
             //set players hp to reivve hp
             var dmg = (byte)(player.life.health - Config.revivehp);
             player.life.askDamage(dmg, Vector3.up, EDeathCause.SUICIDE, ELimb.SPINE, CSteamID.Nil, out EPlayerKill kill, false, ERagdollEffect.NONE, false);
+
+            //BREAK LEGS IF NOT MEDIC REVIVE
+            if (breaklegs)
+            {
+                player.life.breakLegs();
+            }
+
             //stop coroutine
             pcDict.TryGetValue(player, out var cor);
             if (!(cor == null))
