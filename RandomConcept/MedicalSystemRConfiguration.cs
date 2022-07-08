@@ -23,7 +23,7 @@ namespace Random
             downedhp = 40;
             explosiongrav = 0f;
             explforcemult = 2f;
-            revivehp = 1;
+            revivehp = 40;
             offsety = 2;
         }
     }

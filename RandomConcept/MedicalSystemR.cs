@@ -41,6 +41,7 @@ namespace Random
         public Dictionary<Player, Coroutine> pcDict;
         //public Dictionary<Player, Coroutine> downtimerDict;
         public Dictionary<Player, DamagePlayerParameters> pdDict;
+        public Coroutine downeffectcoroutine;
         protected override void Load()
         {
             medicid = 19910;
@@ -68,12 +69,27 @@ namespace Random
             EffectManager.onEffectButtonClicked += onEffectButtonClicked;
             PlayerLife.OnPreDeath += OnPreDeath;
 
-            InvokeRepeating("senddowneffect", 0f, 0.25f);
-
+            //InvokeRepeating("senddowneffect", 0f, 0.5f);
+            downeffectcoroutine = StartCoroutine(senddowneffectcoroutine(0.5f));
             Rocket.Core.Logging.Logger.Log("Random's Mod loaded");
 
 
-        }        
+        }
+        public void Changetimer(float seconds)
+        {
+            StopCoroutine(downeffectcoroutine);
+            downeffectcoroutine = StartCoroutine(senddowneffectcoroutine(seconds));
+            //InvokeRepeating("senddowneffect", 0f, seconds);
+        }
+        public IEnumerator senddowneffectcoroutine(float seconds)
+        {
+            while (true)
+            {
+                senddowneffect();
+                yield return new WaitForSeconds(seconds);
+            }
+            
+        }
 
         protected override void Unload()
         {
@@ -194,6 +210,7 @@ namespace Random
 
         public void senddowneffect()
         {
+            //Rocket.Core.Logging.Logger.Log("sending down effect");
             foreach (UnturnedPlayer player in Instance.ListPlayers)
             {
                 // if player doesnt have medic perms, skip sending them the effect
@@ -210,7 +227,7 @@ namespace Random
                     SteamPlayer sp = player.Player.channel.owner;
                     var pos = up.Position;
                     pos.y = pos.y + Config.offsety;
-                    EffectManager.sendEffect(medicid, sp.transportConnection, pos);
+                    EffectManager.sendEffect(MedicalSystemR.Instance.medicid, sp.transportConnection, pos);
                 }
             }
 

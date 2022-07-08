@@ -71,6 +71,7 @@
   <ItemGroup>
     <Compile Include="ChangeConfig.cs" />
     <Compile Include="changestate.cs" />
+    <Compile Include="Changetimer.cs" />
     <Compile Include="MedicalSystemRConfiguration.cs" />
     <Compile Include="MedicalSystemR.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
